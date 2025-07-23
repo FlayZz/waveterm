@@ -57,7 +57,6 @@ export function computeMoveNode(layoutState: LayoutTreeState, computeInsertActio
         return;
     }
 
-    let newMoveOperation: MoveOperation;
     const parent = lazy(() => findParent(rootNode, nodeId));
     const grandparent = lazy(() => findParent(rootNode, parent().id));
     const indexInParent = lazy(() => parent()?.children.findIndex((child) => nodeId === child.id));
@@ -69,8 +68,19 @@ export function computeMoveNode(layoutState: LayoutTreeState, computeInsertActio
     const isRoot = rootNode.id === nodeId;
 
     // TODO: this should not be necessary. The drag layer is having trouble tracking changes to the LayoutNode fields, so I need to grab the node again here to get the latest data.
-    const node = findNode(rootNode, nodeId);
-    const nodeToMove = findNode(rootNode, nodeToMoveId);
+    let node = findNode(rootNode, nodeId);
+    let nodeToMove = findNode(rootNode, nodeToMoveId);
+    
+    // If we can't find the nodes in the tree, try to find them in the nodes map
+    if (!node && layoutState.nodes && layoutState.nodes[nodeId]) {
+        node = layoutState.nodes[nodeId];
+    }
+    
+    if (!nodeToMove && layoutState.nodes && layoutState.nodes[nodeToMoveId]) {
+        nodeToMove = layoutState.nodes[nodeToMoveId];
+    }
+    
+    let newMoveOperation: MoveOperation = { node: nodeToMove, index: 0 };
 
     if (!node || !nodeToMove) {
         console.warn("node or nodeToMove not set", nodeId, nodeToMoveId);
@@ -95,20 +105,22 @@ export function computeMoveNode(layoutState: LayoutTreeState, computeInsertActio
             if (node.flexDirection === FlexDirection.Column) {
                 newMoveOperation = { parentId: nodeId, index: 0, node: nodeToMove };
             } else {
-                if (isRoot)
+                if (isRoot) {
                     newMoveOperation = {
                         node: nodeToMove,
                         index: 0,
                         insertAtRoot: true,
                     };
-
-                const parentNode = parent();
-                if (parentNode)
-                    newMoveOperation = {
-                        parentId: parentNode.id,
-                        index: indexInParent() ?? 0,
-                        node: nodeToMove,
-                    };
+                } else {
+                    const parentNode = parent();
+                    if (parentNode) {
+                        newMoveOperation = {
+                            parentId: parentNode.id,
+                            index: indexInParent() ?? 0,
+                            node: nodeToMove,
+                        };
+                    }
+                }
             }
             break;
         case DropDirection.OuterBottom:
@@ -128,20 +140,22 @@ export function computeMoveNode(layoutState: LayoutTreeState, computeInsertActio
             if (node.flexDirection === FlexDirection.Column) {
                 newMoveOperation = { parentId: nodeId, index: 1, node: nodeToMove };
             } else {
-                if (isRoot)
+                if (isRoot) {
                     newMoveOperation = {
                         node: nodeToMove,
                         index: 1,
                         insertAtRoot: true,
                     };
-
-                const parentNode = parent();
-                if (parentNode)
-                    newMoveOperation = {
-                        parentId: parentNode.id,
-                        index: indexInParent() + 1,
-                        node: nodeToMove,
-                    };
+                } else {
+                    const parentNode = parent();
+                    if (parentNode) {
+                        newMoveOperation = {
+                            parentId: parentNode.id,
+                            index: indexInParent() + 1,
+                            node: nodeToMove,
+                        };
+                    }
+                }
             }
             break;
         case DropDirection.OuterLeft:
@@ -162,12 +176,13 @@ export function computeMoveNode(layoutState: LayoutTreeState, computeInsertActio
                 newMoveOperation = { parentId: nodeId, index: 0, node: nodeToMove };
             } else {
                 const parentNode = parent();
-                if (parentNode)
+                if (parentNode) {
                     newMoveOperation = {
                         parentId: parentNode.id,
                         index: indexInParent(),
                         node: nodeToMove,
                     };
+                }
             }
             break;
         case DropDirection.OuterRight:
@@ -188,12 +203,13 @@ export function computeMoveNode(layoutState: LayoutTreeState, computeInsertActio
                 newMoveOperation = { parentId: nodeId, index: 1, node: nodeToMove };
             } else {
                 const parentNode = parent();
-                if (parentNode)
+                if (parentNode) {
                     newMoveOperation = {
                         parentId: parentNode.id,
                         index: indexInParent() + 1,
                         node: nodeToMove,
                     };
+                }
             }
             break;
         case DropDirection.Center:
