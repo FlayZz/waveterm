@@ -118,11 +118,24 @@ func ParseURI(uri string) (*Connection, error) {
 		} else {
 			remotePath = ""
 		}
+		
+		// Handle the special case for WSH remote shorthand (//conn/path/to/file)
+		if strings.HasPrefix(uri, "//") && !strings.HasPrefix(uri, "///") && !strings.Contains(uri, "://") {
+			// This is a shorthand for wsh://conn/path/to/file
+			// We need to extract the path correctly
+			if len(split) > 1 {
+				remotePath = split[1]
+			}
+		}
 	}
 	parseWshPath := func() {
 		if strings.HasPrefix(rest, "wsl://") {
 			host = wslConnRegex.FindString(rest)
 			remotePath = strings.TrimPrefix(rest, host)
+			// Ensure path starts with a slash for WSL paths
+			if remotePath != "" && !strings.HasPrefix(remotePath, "/") {
+				remotePath = "/" + remotePath
+			}
 		} else {
 			parseGenericPath()
 		}
@@ -154,6 +167,9 @@ func ParseURI(uri string) (*Connection, error) {
 			host = wshrpc.LocalConnName
 		}
 		if strings.HasPrefix(remotePath, "/~") {
+			remotePath = strings.TrimPrefix(remotePath, "/")
+		} else if host == "local" && windowsDriveRegex.MatchString(remotePath) {
+			// For Windows paths with drive letters, don't add a preceding slash
 			remotePath = strings.TrimPrefix(remotePath, "/")
 		} else if addPrecedingSlash && (len(remotePath) > 1 && !windowsDriveRegex.MatchString(remotePath) && !strings.HasPrefix(remotePath, "/") && !strings.HasPrefix(remotePath, "~") && !strings.HasPrefix(remotePath, "./") && !strings.HasPrefix(remotePath, "../") && !strings.HasPrefix(remotePath, ".\\") && !strings.HasPrefix(remotePath, "..\\") && remotePath != "..") {
 			remotePath = "/" + remotePath

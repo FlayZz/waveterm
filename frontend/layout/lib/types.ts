@@ -298,6 +298,10 @@ export type LayoutTreeState = {
     leafOrder?: LeafOrderEntry[];
     pendingBackendActions: LayoutActionData[];
     generation: number;
+    /**
+     * A map of node IDs to nodes for quick lookup
+     */
+    nodes?: { [key: string]: LayoutNode };
 };
 
 export type WritableLayoutTreeStateAtom = WritableAtom<LayoutTreeState, [value: LayoutTreeState], void>;

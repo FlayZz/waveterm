@@ -7,5 +7,9 @@ export function newLayoutTreeState(rootNode: LayoutNode): LayoutTreeState {
     return {
         rootNode,
         generation: 0,
+        pendingBackendActions: [],
+        nodes: {
+            [rootNode.id]: rootNode
+        }
     };
 }
